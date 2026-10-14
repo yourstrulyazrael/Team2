@@ -1,13 +1,16 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Pause, Play } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Check, Pause, Play, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { playChime } from "@/lib/chime";
 import { DIFFICULTY_LABELS } from "@/lib/plan";
 import {
   budgetMs,
+  dismissTimeUp,
+  extend,
   formatClock,
   pause,
   remainingMs,
@@ -40,6 +43,16 @@ export function SessionScreen({ session, update, onEnd }: Props) {
     }, 250);
     return () => clearInterval(id);
   }, [running, update]);
+
+  // Play the chime when a subject's time runs out. The ref remembers the
+  // last value we saw, so a page refresh with the prompt already open
+  // doesn't chime again.
+  const timeUp = session.timeUpIndex ?? null;
+  const lastTimeUp = useRef(timeUp);
+  useEffect(() => {
+    if (timeUp !== null && timeUp !== lastTimeUp.current) playChime();
+    lastTimeUp.current = timeUp;
+  }, [timeUp]);
 
   function act(change: (s: Session, t: number) => Session) {
     const t = Date.now();
@@ -77,12 +90,13 @@ export function SessionScreen({ session, update, onEnd }: Props) {
                   <Pause className="h-4 w-4" />
                   Pause
                 </Button>
+              ) : remainingMs(session, active, now) <= 0 ? (
+                <Button size="lg" onClick={() => act((s, t) => extend(s, active, t))}>
+                  <Plus className="h-4 w-4" />
+                  15 min
+                </Button>
               ) : (
-                <Button
-                  size="lg"
-                  onClick={() => act(start)}
-                  disabled={remainingMs(session, active, now) <= 0}
-                >
+                <Button size="lg" onClick={() => act(start)}>
                   <Play className="h-4 w-4" />
                   Start
                 </Button>
@@ -97,6 +111,7 @@ export function SessionScreen({ session, update, onEnd }: Props) {
           const isActive = i === active;
           const total = budgetMs(subject);
           const progress = total > 0 ? spentMs(session, i, now) / total : 1;
+          const done = remainingMs(session, i, now) <= 0;
           return (
             <button
               key={i}
@@ -110,7 +125,8 @@ export function SessionScreen({ session, update, onEnd }: Props) {
               )}
             >
               <div className="flex items-center justify-between gap-4 text-sm">
-                <span className="truncate font-medium">
+                <span className="flex min-w-0 items-center gap-1.5 truncate font-medium">
+                  {done && <Check className="h-4 w-4 shrink-0" aria-label="Done" />}
                   {subject.name}{" "}
                   <span className="font-normal text-muted-foreground">
                     · {DIFFICULTY_LABELS[subject.difficulty]}
@@ -134,6 +150,37 @@ export function SessionScreen({ session, update, onEnd }: Props) {
       <Button variant="ghost" onClick={onEnd}>
         End session
       </Button>
+
+      {timeUp !== null && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-foreground/20 p-4 sm:items-center">
+          <Card
+            role="alertdialog"
+            aria-modal="true"
+            aria-labelledby="time-up-title"
+            className="w-full max-w-sm"
+          >
+            <CardContent className="flex flex-col gap-4 p-6 text-center">
+              <div className="flex flex-col gap-1">
+                <p id="time-up-title" className="text-lg font-semibold">
+                  Time&apos;s up for {session.subjects[timeUp].name}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  Move on to another subject, or keep going a little longer?
+                </p>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <Button variant="outline" onClick={() => update(dismissTimeUp)}>
+                  Switch subject
+                </Button>
+                <Button onClick={() => act((s, t) => extend(s, timeUp, t))}>
+                  <Plus className="h-4 w-4" />
+                  15 min
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }

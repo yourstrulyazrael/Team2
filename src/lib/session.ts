@@ -21,6 +21,7 @@ export type Session = {
   subjects: SessionSubject[];
   activeIndex: number | null; // which subject is selected
   runningSince: number | null; // when the active subject's timer started, or null if paused
+  timeUpIndex?: number | null; // subject whose time just ran out; shows the time's up prompt
 };
 
 export function createSession(
@@ -37,6 +38,7 @@ export function createSession(
     subjects: budgets.map((b) => ({ ...b, extraSeconds: 0, spentMs: 0 })),
     activeIndex: null,
     runningSince: null,
+    timeUpIndex: null,
   };
 }
 
@@ -80,11 +82,35 @@ export function select(session: Session, index: number, now: number): Session {
   return { ...pause(session, now), activeIndex: index };
 }
 
-// Stops the running timer once its subject's budget is used up.
+// Stops the running timer once its subject's budget is used up, and
+// flags it so the time's up prompt appears.
 export function stopIfFinished(session: Session, now: number): Session {
   const i = session.activeIndex;
   if (i === null || session.runningSince === null) return session;
-  return remainingMs(session, i, now) <= 0 ? pause(session, now) : session;
+  if (remainingMs(session, i, now) > 0) return session;
+  return { ...pause(session, now), timeUpIndex: i };
+}
+
+// "+15 min": adds time on top of the plan for this subject only (not
+// taken from other subjects) and carries on studying it.
+export const EXTEND_SECONDS = 15 * 60;
+
+export function extend(session: Session, index: number, now: number): Session {
+  const paused = pause(session, now);
+  return {
+    ...paused,
+    subjects: paused.subjects.map((s, j) =>
+      j === index ? { ...s, extraSeconds: s.extraSeconds + EXTEND_SECONDS } : s,
+    ),
+    activeIndex: index,
+    runningSince: now,
+    timeUpIndex: null,
+  };
+}
+
+// "Switch subject": closes the prompt so the student can pick another.
+export function dismissTimeUp(session: Session): Session {
+  return { ...session, activeIndex: null, timeUpIndex: null };
 }
 
 // Formats milliseconds as a clock: "1:06:40" or "4:05".

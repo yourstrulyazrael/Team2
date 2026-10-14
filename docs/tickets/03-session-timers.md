@@ -9,11 +9,11 @@ based on clock timestamps, not on counting ticks.
 
 **Blocked by:** 02
 
-**Status:** todo
+**Status:** done
 
-- [ ] "Start session" opens the Session screen with every subject and its budget
-- [ ] Tapping a subject makes it active; Start / Pause control its countdown
-- [ ] Switching subject pauses the previous one; each keeps its own remaining time
-- [ ] Refreshing the page mid-session keeps all subjects and remaining times, including a running timer
-- [ ] Time stays correct when the tab is in the background
-- [ ] Works on the live URL
+- [x] "Start session" opens the Session screen with every subject and its budget
+- [x] Tapping a subject makes it active; Start / Pause control its countdown
+- [x] Switching subject pauses the previous one; each keeps its own remaining time
+- [x] Refreshing the page mid-session keeps all subjects and remaining times, including a running timer
+- [x] Time stays correct when the tab is in the background
+- [x] Works on the live URL
