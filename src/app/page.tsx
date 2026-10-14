@@ -1,13 +1,16 @@
 "use client";
 
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { EMPTY_PLAN, PlanScreen, type PlanDraft } from "@/components/plan-screen";
+import dynamic from "next/dynamic";
+
+// The app keeps its data in the browser (localStorage), which doesn't
+// exist on the server. ssr: false tells Next.js to only render it in the
+// browser, so it can read saved data on the very first render.
+const StudyApp = dynamic(
+  () => import("@/components/study-app").then((m) => m.StudyApp),
+  { ssr: false },
+);
 
 export default function Home() {
-  const [draft, setDraft] = useState<PlanDraft>(EMPTY_PLAN);
-  const [screen, setScreen] = useState<"plan" | "session">("plan");
-
   return (
     <main className="mx-auto flex w-full max-w-md flex-1 flex-col gap-6 px-4 py-8 sm:py-12">
       <header className="flex flex-col gap-1">
@@ -16,18 +19,7 @@ export default function Home() {
           Split your study time by difficulty, one timer per subject.
         </p>
       </header>
-
-      {screen === "plan" ? (
-        <PlanScreen draft={draft} onChange={setDraft} onStart={() => setScreen("session")} />
-      ) : (
-        // Placeholder until Ticket 03 builds the Session screen.
-        <div className="flex flex-col gap-4">
-          <p className="text-sm text-muted-foreground">Session timers are coming in Ticket 03.</p>
-          <Button variant="outline" onClick={() => setScreen("plan")}>
-            Back to plan
-          </Button>
-        </div>
-      )}
+      <StudyApp />
     </main>
   );
 }
