@@ -2,42 +2,44 @@
 
 /* Design tokens. Change these to re-skin the whole app at once —
    every component below reads from them. */
+/* Soft pastel palette: lavender accents on a warm cream background.
+   Text colours are kept dark enough to stay readable. */
 :root {
-  --background: #ffffff;
-  --foreground: #0a0a0a;
+  --background: #fbf7f4;
+  --foreground: #2d2a3e;
   --card: #ffffff;
-  --card-foreground: #0a0a0a;
-  --primary: #1a1a1a;
-  --primary-foreground: #fafafa;
-  --secondary: #f4f4f5;
-  --secondary-foreground: #1a1a1a;
-  --muted: #f4f4f5;
-  --muted-foreground: #71717a;
-  --destructive: #dc2626;
-  --destructive-foreground: #fafafa;
-  --border: #e4e4e7;
-  --input: #e4e4e7;
-  --ring: #0a0a0a;
-  --radius: 0.625rem;
+  --card-foreground: #2d2a3e;
+  --primary: #c9b8f5;
+  --primary-foreground: #2a1f4d;
+  --secondary: #f1eafb;
+  --secondary-foreground: #2d2a3e;
+  --muted: #f3eef8;
+  --muted-foreground: #6e6883;
+  --destructive: #f9c6c6;
+  --destructive-foreground: #6b1d1d;
+  --border: #ebe4f2;
+  --input: #e2d9ee;
+  --ring: #a58ee8;
+  --radius: 0.875rem;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #fafafa;
-    --card: #141414;
-    --card-foreground: #fafafa;
-    --primary: #fafafa;
-    --primary-foreground: #1a1a1a;
-    --secondary: #27272a;
-    --secondary-foreground: #fafafa;
-    --muted: #27272a;
-    --muted-foreground: #a1a1aa;
-    --destructive: #ef4444;
-    --destructive-foreground: #fafafa;
-    --border: #27272a;
-    --input: #3f3f46;
-    --ring: #d4d4d8;
+    --background: #1d1b26;
+    --foreground: #f1edf8;
+    --card: #262333;
+    --card-foreground: #f1edf8;
+    --primary: #c9b8f5;
+    --primary-foreground: #2a1f4d;
+    --secondary: #322e42;
+    --secondary-foreground: #f1edf8;
+    --muted: #322e42;
+    --muted-foreground: #b6aecb;
+    --destructive: #f4a9a9;
+    --destructive-foreground: #4a1010;
+    --border: #363146;
+    --input: #443e57;
+    --ring: #c9b8f5;
   }
 }
 
