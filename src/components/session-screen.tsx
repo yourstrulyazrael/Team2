@@ -1,22 +1,29 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Check, Pause, Play, Plus } from "lucide-react";
+import { Check, Coffee, Pause, Play, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { playChime } from "@/lib/chime";
 import { DIFFICULTY_LABELS } from "@/lib/plan";
 import {
+  BREAKS,
+  allowanceLeftMs,
+  breakRemainingMs,
   budgetMs,
+  dismissBreakOver,
   dismissTimeUp,
+  endBreak,
   extend,
   formatClock,
+  isOnBreak,
   pause,
   remainingMs,
   select,
   spentMs,
   start,
+  startBreak,
   stopIfFinished,
   type Session,
 } from "@/lib/session";
@@ -30,19 +37,21 @@ type Props = {
 export function SessionScreen({ session, update, onEnd }: Props) {
   const [now, setNow] = useState(() => Date.now());
   const running = session.runningSince !== null;
+  const onBreak = isOnBreak(session);
+  const ticking = running || onBreak;
 
-  // While a timer runs, refresh the clock four times a second. The time
+  // While a timer or break runs, refresh the clock four times a second. The time
   // shown is always worked out from timestamps, so a slow tick never
   // makes it drift.
   useEffect(() => {
-    if (!running) return;
+    if (!ticking) return;
     const id = setInterval(() => {
       const t = Date.now();
       setNow(t);
       update((s) => stopIfFinished(s, t));
     }, 250);
     return () => clearInterval(id);
-  }, [running, update]);
+  }, [ticking, update]);
 
   // Play the chime when a subject's time runs out. The ref remembers the
   // last value we saw, so a page refresh with the prompt already open
@@ -54,6 +63,14 @@ export function SessionScreen({ session, update, onEnd }: Props) {
     lastTimeUp.current = timeUp;
   }, [timeUp]);
 
+  // Chime again when a break finishes.
+  const breakOver = session.breakOver ?? false;
+  const lastBreakOver = useRef(breakOver);
+  useEffect(() => {
+    if (breakOver && !lastBreakOver.current) playChime();
+    lastBreakOver.current = breakOver;
+  }, [breakOver]);
+
   function act(change: (s: Session, t: number) => Session) {
     const t = Date.now();
     setNow(t);
@@ -62,12 +79,40 @@ export function SessionScreen({ session, update, onEnd }: Props) {
 
   const active = session.activeIndex;
   const activeSubject = active === null ? null : session.subjects[active];
+  const allowanceLeft = allowanceLeftMs(session, now);
 
   return (
     <div className="flex flex-col gap-6">
       <Card>
         <CardContent className="flex flex-col items-center gap-4 p-6">
-          {activeSubject === null || active === null ? (
+          {breakOver && !onBreak && (
+            <div
+              role="status"
+              className="flex w-full items-center justify-between gap-3 rounded-[var(--radius)] bg-secondary px-4 py-3 text-sm"
+            >
+              <span>Break&apos;s over. Press Start when you&apos;re ready.</span>
+              <Button size="sm" variant="ghost" onClick={() => update(dismissBreakOver)}>
+                OK
+              </Button>
+            </div>
+          )}
+          {onBreak ? (
+            <>
+              <div className="text-center">
+                <p className="flex items-center justify-center gap-2 text-lg font-semibold">
+                  <Coffee className="h-5 w-5" />
+                  On a break
+                </p>
+                <p className="text-sm text-muted-foreground">Rest your mind. Your subject is paused.</p>
+              </div>
+              <p className="font-mono text-6xl font-semibold tabular-nums tracking-tight">
+                {formatClock(breakRemainingMs(session, now))}
+              </p>
+              <Button size="lg" variant="secondary" onClick={() => act(endBreak)}>
+                End break early
+              </Button>
+            </>
+          ) : activeSubject === null || active === null ? (
             <p className="py-8 text-center text-sm text-muted-foreground">
               Tap a subject below to begin.
             </p>
@@ -105,6 +150,26 @@ export function SessionScreen({ session, update, onEnd }: Props) {
           )}
         </CardContent>
       </Card>
+
+      <div className="flex flex-col gap-3">
+        <div className="flex items-center justify-between text-sm">
+          <span className="text-muted-foreground">Break allowance left</span>
+          <span className="font-mono tabular-nums">{formatClock(allowanceLeft)}</span>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          {BREAKS.map((b) => (
+            <Button
+              key={b.label}
+              variant="outline"
+              disabled={onBreak || allowanceLeft <= 0}
+              onClick={() => act((s, t) => startBreak(s, b.seconds, t))}
+            >
+              <Coffee className="h-4 w-4" />
+              {b.label} · {formatClock(Math.min(b.seconds * 1000, allowanceLeft))}
+            </Button>
+          ))}
+        </div>
+      </div>
 
       <div className="flex flex-col gap-3">
         {session.subjects.map((subject, i) => {
